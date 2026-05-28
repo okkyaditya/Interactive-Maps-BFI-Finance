@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Kantor BFI Finance Indonesia</title>
+    <meta name="description" content="Peta interaktif lokasi kantor cabang BFI Finance di seluruh Indonesia. Temukan cabang terdekat dengan unit syariah.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <!-- App CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-inner">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>BFI Finance</h1>
+                    <p class="logo-subtitle">Peta Kantor Cabang</p>
+                </div>
+            </div>
+            <div class="header-stats" id="header-stats">
+                <div class="stat-item" id="stat-total">
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">Total Cabang</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item stat-syariah" id="stat-syariah">
+                    <span class="stat-dot green"></span>
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">Unit Syariah</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item stat-konvensional" id="stat-konvensional">
+                    <span class="stat-dot blue"></span>
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">Konvensional</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel" id="controls-panel">
+        <!-- Search -->
+        <div class="search-container" id="search-container">
+            <div class="search-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+            <input type="text" id="search-input" class="search-input" placeholder="Cari cabang, kota, atau alamat..." autocomplete="off">
+            <button class="search-clear" id="search-clear" aria-label="Hapus pencarian" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Search Results Dropdown -->
+        <div class="search-results" id="search-results" style="display:none;"></div>
+
+        <!-- Filter Buttons -->
+        <div class="filter-group" id="filter-group">
+            <button class="filter-btn active" data-filter="all" id="filter-all">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                </svg>
+                Semua
+            </button>
+            <button class="filter-btn" data-filter="syariah" id="filter-syariah">
+                <span class="filter-dot green"></span>
+                Syariah
+            </button>
+            <button class="filter-btn" data-filter="konvensional" id="filter-konvensional">
+                <span class="filter-dot blue"></span>
+                Konvensional
+            </button>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Legend -->
+    <div class="legend" id="legend">
+        <div class="legend-item">
+            <div class="legend-marker green"></div>
+            <span>Unit Syariah</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-marker blue"></div>
+            <span>Tanpa Syariah</span>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Branch Data -->
+    <script src="branches_data.js"></script>
+    
+    <!-- App JS -->
+    <script src="app.js"></script>
+</body>
+</html>
