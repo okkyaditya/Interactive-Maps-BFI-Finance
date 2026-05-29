@@ -291,6 +291,11 @@
         BRANCHES.forEach((branch) => {
             if (!branch.lat || !branch.lng) return;
 
+            // Strip "Cabang " prefix dynamically from name if present
+            if (branch.name) {
+                branch.name = branch.name.replace(/^cabang\s+/i, "");
+            }
+
             const marker = L.marker([branch.lat, branch.lng], {
                 icon: createMarkerIcon(branch.syariah),
             });
@@ -571,6 +576,164 @@
         }, intervalTime);
     }
 
+    // ===== Interactive Branches Table Modal =====
+    function initTableModal() {
+        const modal = document.getElementById('table-modal');
+        const showBtn = document.getElementById('show-table-btn');
+        const closeBtn = document.getElementById('close-table-btn');
+        const searchInput = document.getElementById('table-search-input');
+        const filterSelect = document.getElementById('table-filter-select');
+
+        if (!modal || !showBtn || !closeBtn || !searchInput || !filterSelect) return;
+
+        // Open Modal
+        showBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+            renderBranchesTable(BRANCHES);
+            // Reset filters
+            searchInput.value = '';
+            filterSelect.value = 'all';
+        });
+
+        // Close Modal
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Close on clicking overlay background
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Search & Filter event listeners
+        function handleFilters() {
+            const query = searchInput.value.trim().toLowerCase();
+            const filterType = filterSelect.value;
+
+            if (typeof BRANCHES === 'undefined') return;
+
+            const filtered = BRANCHES.filter((branch) => {
+                // Category filter
+                if (filterType === 'syariah' && !branch.syariah) return false;
+                if (filterType === 'konvensional' && branch.syariah) return false;
+
+                // Search query filter
+                if (query) {
+                    return (
+                        branch.name.toLowerCase().includes(query) ||
+                        branch.city.toLowerCase().includes(query) ||
+                        branch.address.toLowerCase().includes(query)
+                    );
+                }
+
+                return true;
+            });
+
+            renderBranchesTable(filtered);
+        }
+
+        searchInput.addEventListener('input', handleFilters);
+        filterSelect.addEventListener('change', handleFilters);
+    }
+
+    function renderBranchesTable(data) {
+        const tableBody = document.getElementById('branches-table-body');
+        const totalCountSpan = document.getElementById('table-total-count');
+
+        if (!tableBody || !totalCountSpan) return;
+
+        totalCountSpan.textContent = data.length;
+
+        if (data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="table-no-results">Tidak ada cabang BFI Finance yang cocok dengan pencarian Anda</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = data.map((branch, index) => {
+            const badgeClass = branch.syariah ? 'syariah' : 'konvensional';
+            const badgeText = branch.syariah ? 'Unit Syariah' : 'Konvensional';
+
+            return `
+                <tr>
+                    <td style="font-weight: 600; color: var(--color-text-tertiary);">${index + 1}</td>
+                    <td style="font-weight: 700; color: var(--color-text-primary);">${escapeHtml(branch.name)}</td>
+                    <td>
+                        <span class="table-badge ${badgeClass}">${badgeText}</span>
+                    </td>
+                    <td style="font-weight: 500;">${escapeHtml(branch.city)}</td>
+                    <td style="color: var(--color-text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(branch.address)}">
+                        ${escapeHtml(branch.address)}
+                    </td>
+                    <td style="font-weight: 500; font-family: monospace;">${escapeHtml(branch.phone || '-')}</td>
+                    <td>
+                        <div class="table-action-btn-group">
+                            <button class="table-action-btn map-locate" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}" title="Tampilkan di Peta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                            </button>
+                            ${branch.mapsUrl ? `
+                            <a href="${escapeHtml(branch.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="table-action-btn directions" title="Petunjuk Arah Google Maps">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                                </svg>
+                            </a>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Bind map-locate click event handlers
+        tableBody.querySelectorAll('.map-locate').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const lat = parseFloat(btn.dataset.lat);
+                const lng = parseFloat(btn.dataset.lng);
+                const branchName = btn.dataset.name;
+
+                // Close Modal
+                document.getElementById('table-modal').style.display = 'none';
+
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                // Smooth premium flight to coordinates
+                map.flyTo([lat, lng], 15, {
+                    duration: 1.5,
+                    easeLinearity: 0.25
+                });
+
+                // Find and trigger popup open and active circle radius lock
+                setTimeout(() => {
+                    if (typeof BRANCHES !== 'undefined') {
+                        const branch = BRANCHES.find(b => b.name === branchName);
+                        if (branch) {
+                            updateActiveCircle(branch);
+                        }
+                    }
+
+                    const targetMarker = allMarkers.find(m => {
+                        const d = m._branchData;
+                        return d.lat === lat && d.lng === lng;
+                    });
+
+                    if (targetMarker) {
+                        clusterGroup.zoomToShowLayer(targetMarker, () => {
+                            targetMarker.openPopup();
+                        });
+                    }
+                }, 1600);
+            });
+        });
+    }
+
     // ===== Initialize =====
     function init() {
         loadBranches();
@@ -578,6 +741,7 @@
         initFilters();
         initDrawer();
         initLandingTransition();
+        initTableModal();
     }
 
     // Wait for DOM

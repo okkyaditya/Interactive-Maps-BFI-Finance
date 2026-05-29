@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peta Kantor BFI Finance Indonesia</title>
-    <meta name="description" content="Peta interaktif lokasi kantor cabang BFI Finance di seluruh Indonesia. Temukan cabang terdekat dengan unit syariah.">
-    
+    <meta name="description"
+        content="Peta interaktif lokasi kantor cabang BFI Finance di seluruh Indonesia. Temukan cabang terdekat dengan unit syariah.">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <!-- Leaflet MarkerCluster CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    
+
     <!-- App CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Hero Landing Page -->
     <div id="hero-landing" class="hero-landing">
@@ -35,12 +39,13 @@
             <span class="particle p7"></span>
             <span class="particle p8"></span>
         </div>
-        
+
         <nav class="hero-nav">
             <div class="hero-logo">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
                 </svg>
                 <span>Blocation</span>
             </div>
@@ -49,7 +54,7 @@
                 <a href="#about" class="hero-nav-link">About</a>
             </div>
         </nav>
-        
+
         <div class="hero-content">
             <h1 class="hero-title">BFI Branch & Pos Location</h1>
             <p class="hero-desc">
@@ -58,9 +63,10 @@
             </p>
             <button id="explore-btn" class="explore-btn">
                 <span>Explore Now!</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
                 </svg>
             </button>
         </div>
@@ -88,9 +94,10 @@
             <div class="header-inner">
                 <div class="logo-section">
                     <div class="logo-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                            <circle cx="12" cy="10" r="3"/>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
                         </svg>
                     </div>
                     <div class="logo-text">
@@ -98,23 +105,38 @@
                         <p class="logo-subtitle">Peta Kantor Cabang</p>
                     </div>
                 </div>
-                <div class="header-stats" id="header-stats">
-                    <div class="stat-item" id="stat-total">
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Total Cabang</span>
+                <div class="header-right-side">
+                    <div class="header-stats" id="header-stats">
+                        <div class="stat-item" id="stat-total">
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Total Cabang</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item stat-syariah" id="stat-syariah">
+                            <span class="stat-dot green"></span>
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Unit Syariah</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item stat-konvensional" id="stat-konvensional">
+                            <span class="stat-dot blue"></span>
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Konvensional</span>
+                        </div>
                     </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item stat-syariah" id="stat-syariah">
-                        <span class="stat-dot green"></span>
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Unit Syariah</span>
-                    </div>
-                    <div class="stat-divider"></div>
-                    <div class="stat-item stat-konvensional" id="stat-konvensional">
-                        <span class="stat-dot blue"></span>
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Konvensional</span>
-                    </div>
+                    <div class="stat-divider header-stats-divider"></div>
+                    <button id="show-table-btn" class="header-action-btn" title="Lihat Semua Cabang">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6" />
+                            <line x1="8" y1="12" x2="21" y2="12" />
+                            <line x1="8" y1="18" x2="21" y2="18" />
+                            <line x1="3" y1="6" x2="3.01" y2="6" />
+                            <line x1="3" y1="12" x2="3.01" y2="12" />
+                            <line x1="3" y1="18" x2="3.01" y2="18" />
+                        </svg>
+                        <span>Lihat Daftar Cabang</span>
+                    </button>
                 </div>
             </div>
         </header>
@@ -124,16 +146,19 @@
             <!-- Search -->
             <div class="search-container" id="search-container">
                 <div class="search-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                 </div>
-                <input type="text" id="search-input" class="search-input" placeholder="Cari cabang, kota, atau alamat..." autocomplete="off">
+                <input type="text" id="search-input" class="search-input"
+                    placeholder="Cari cabang, kota, atau alamat..." autocomplete="off">
                 <button class="search-clear" id="search-clear" aria-label="Hapus pencarian" style="display:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -145,7 +170,7 @@
             <div class="filter-group" id="filter-group">
                 <button class="filter-btn active" data-filter="all" id="filter-all">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="10" />
                     </svg>
                     Semua
                 </button>
@@ -178,9 +203,10 @@
         <!-- Details Drawer -->
         <div id="details-drawer" class="details-drawer">
             <button class="drawer-close" id="drawer-close" aria-label="Tutup Detail">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
             </button>
             <div class="drawer-content" id="drawer-content">
@@ -189,16 +215,74 @@
         </div>
     </div>
 
+    <!-- Interactive Branches Table Modal -->
+    <div id="table-modal" class="table-modal" style="display: none;">
+        <div class="table-modal-box">
+            <div class="table-modal-header">
+                <div class="table-modal-title-section">
+                    <h2 class="table-modal-title">Daftar Semua Cabang BFI Finance</h2>
+                    <p class="table-modal-subtitle">Total terdata: <span id="table-total-count">0</span> cabang</p>
+                </div>
+                <button id="close-table-btn" class="table-modal-close" aria-label="Tutup Tabel">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="table-modal-filters">
+                <div class="table-search-wrapper">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="table-search-icon">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="table-search-input" class="table-search-input"
+                        placeholder="Cari berdasarkan nama, kota, alamat...">
+                </div>
+                <div class="table-select-wrapper">
+                    <select id="table-filter-select" class="table-filter-select">
+                        <option value="all">Semua Kategori</option>
+                        <option value="syariah">Unit Syariah</option>
+                        <option value="konvensional">Konvensional</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-modal-content">
+                <table class="branches-data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">No</th>
+                            <th style="width: 200px;">Nama Cabang</th>
+                            <th style="width: 120px;">Jenis</th>
+                            <th style="width: 150px;">Kota / Kabupaten</th>
+                            <th>Alamat Lengkap</th>
+                            <th style="width: 150px;">No. Telepon</th>
+                            <th style="width: 120px; text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branches-table-body">
+                        <!-- Konten baris dirender dinamis via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- Leaflet MarkerCluster JS -->
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    
+
     <!-- Branch Data -->
     <script src="branches_data.js"></script>
-    
+
     <!-- App JS -->
     <script src="app.js"></script>
 </body>
+
 </html>
