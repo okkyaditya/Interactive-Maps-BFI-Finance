@@ -497,46 +497,53 @@
         const heroLanding = document.getElementById('hero-landing');
         const loadingScreen = document.getElementById('loading-screen');
         const appMain = document.getElementById('app-main');
-        const progressFill = document.getElementById('loading-bar-fill');
-        const statusText = document.getElementById('loading-status');
 
-        if (!exploreBtn || !heroLanding || !loadingScreen || !appMain) return;
+        // Expose startMapTransition globally for React to call
+        window.startMapTransition = () => {
+            const hLanding = document.getElementById('hero-landing');
+            const lScreen = document.getElementById('loading-screen');
+            const aMain = document.getElementById('app-main');
+            const progressFill = document.getElementById('loading-bar-fill');
+            const statusText = document.getElementById('loading-status');
 
-        exploreBtn.addEventListener('click', () => {
+            if (!hLanding || !lScreen || !aMain) return;
+
             // 1. Fade out landing page
-            heroLanding.classList.add('fade-out');
+            hLanding.classList.add('fade-out');
 
             setTimeout(() => {
-                heroLanding.style.display = 'none';
+                hLanding.style.display = 'none';
                 
                 // 2. Show loading screen
-                loadingScreen.style.display = 'flex';
+                lScreen.style.display = 'flex';
                 
                 // Start loading simulation
                 simulateLoadingProgress((progress) => {
-                    progressFill.style.width = progress + '%';
+                    if (progressFill) progressFill.style.width = progress + '%';
                     
                     // Dynamic helpful tips
-                    if (progress < 25) {
-                        statusText.textContent = 'Unit Syariah ditandai dengan pin berwarna hijau, sedangkan Konvensional berwarna biru! 🟢🔵';
-                    } else if (progress < 50) {
-                        statusText.textContent = 'Gunakan fitur Pencarian di bagian atas untuk menemukan cabang berdasarkan kota atau alamat! 🔍';
-                    } else if (progress < 75) {
-                        statusText.textContent = 'Aktifkan radius 60km dengan mengklik salah satu cabang untuk melihat jangkauan wilayah! 🎯';
-                    } else {
-                        statusText.textContent = 'Klik tombol Expand pada popup cabang untuk memunculkan detail kontak lengkap di panel samping! 📋';
+                    if (statusText) {
+                        if (progress < 25) {
+                            statusText.textContent = 'Unit Syariah ditandai dengan pin berwarna hijau, sedangkan Konvensional berwarna biru! 🟢🔵';
+                        } else if (progress < 50) {
+                            statusText.textContent = 'Gunakan fitur Pencarian di bagian atas untuk menemukan cabang berdasarkan kota atau alamat! 🔍';
+                        } else if (progress < 75) {
+                            statusText.textContent = 'Aktifkan radius 60km dengan mengklik salah satu cabang untuk melihat jangkauan wilayah! 🎯';
+                        } else {
+                            statusText.textContent = 'Klik tombol Expand pada popup cabang untuk memunculkan detail kontak lengkap di panel samping! 📋';
+                        }
                     }
                 }, () => {
                     // Loading complete!
                     // 3. Fade out loading screen
-                    loadingScreen.classList.add('fade-out');
+                    lScreen.classList.add('fade-out');
                     
                     setTimeout(() => {
-                        loadingScreen.style.display = 'none';
+                        lScreen.style.display = 'none';
                         
                         // 4. Reveal Map Dashboard
-                        appMain.style.display = 'block';
-                        appMain.classList.add('fade-in');
+                        aMain.style.display = 'block';
+                        aMain.classList.add('fade-in');
                         
                         // Recalculate Leaflet size immediately
                         map.invalidateSize();
@@ -553,7 +560,11 @@
                     }, 500); // Wait for loading screen fade out
                 });
             }, 800); // Wait for landing page fade out
-        });
+        };
+
+        if (exploreBtn) {
+            exploreBtn.addEventListener('click', window.startMapTransition);
+        }
     }
 
     function simulateLoadingProgress(onProgress, onComplete) {
