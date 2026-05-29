@@ -96,100 +96,74 @@
     let currentFilter = 'all';
     let activeCircle = null;
 
-    // ===== Popup Open/Close Event Listeners for 60km Radius Circle =====
+    // ===== Active Radius Circle Management (60km) =====
+    function updateActiveCircle(branch) {
+        // Remove previous circle if it exists
+        if (activeCircle) {
+            map.removeLayer(activeCircle);
+            activeCircle = null;
+        }
+
+        if (!branch) return;
+
+        // Draw new circle (60km = 60000 meters)
+        const circleColor = branch.syariah ? '#059669' : '#2563eb'; // Emerald Green / Royal Blue
+        activeCircle = L.circle([branch.lat, branch.lng], {
+            radius: 60000,
+            color: circleColor,
+            fillColor: circleColor,
+            fillOpacity: 0.05,
+            weight: 1.5,
+            dashArray: '8, 8', // Perfect spacing for rotation
+            className: 'rotating-radius-circle', // CSS class for rotating animation
+        }).addTo(map);
+    }
+
+    function removeActiveCircle() {
+        if (activeCircle) {
+            map.removeLayer(activeCircle);
+            activeCircle = null;
+        }
+    }
+
+    // Update active circle on marker popup click
     map.on('popupopen', function (e) {
         const marker = e.popup._source;
         if (marker && marker._branchData) {
-            const branch = marker._branchData;
-            
-            // Remove previous circle if it exists
-            if (activeCircle) {
-                map.removeLayer(activeCircle);
-            }
-            
-            // Draw new circle (60km = 60000 meters)
-            const circleColor = branch.syariah ? '#059669' : '#2563eb'; // Emerald Green / Royal Blue
-            activeCircle = L.circle([branch.lat, branch.lng], {
-                radius: 60000,
-                color: circleColor,
-                fillColor: circleColor,
-                fillOpacity: 0.06,
-                weight: 1.5,
-                dashArray: '5, 5', // Clean, professional dashed border
-            }).addTo(map);
+            updateActiveCircle(marker._branchData);
         }
     });
 
-    map.on('popupclose', function (e) {
-        const marker = e.popup._source;
-        if (activeCircle && marker) {
-            // Only remove the circle if the marker is still visible on the map
-            // (i.e. user clicked the 'x' button or closed it manually, not due to clustering/zoom)
-            if (map.hasLayer(marker)) {
-                map.removeLayer(activeCircle);
-                activeCircle = null;
-            }
-        }
-    });
-
-    // ===== Create Popup HTML =====
+    // ===== Create Popup HTML (Compact 1-Row Layout) =====
     function createPopupContent(branch) {
-        const badgeClass = branch.syariah ? 'syariah' : 'konvensional';
-        const badgeText = branch.syariah ? 'Unit Syariah' : 'Konvensional';
+        const statusClass = branch.syariah ? 'syariah' : 'konvensional';
+        const branchId = escapeHtml(branch.name);
 
         return `
-            <div class="popup-content">
-                <div class="popup-header">
-                    <div class="popup-badge ${badgeClass}">
-                        <span class="popup-badge-dot"></span>
-                        ${badgeText}
-                    </div>
-                    <div class="popup-name">${escapeHtml(branch.name)}</div>
+            <div class="popup-compact-row ${statusClass}">
+                <div class="popup-home-icon-container">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
                 </div>
-                <div class="popup-body">
-                    <div class="popup-info-row">
-                        <div class="popup-info-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                                <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                        </div>
-                        <div class="popup-info-text">
-                            <div class="popup-info-label">Alamat</div>
-                            <div class="popup-info-value">${escapeHtml(branch.address)}</div>
-                        </div>
-                    </div>
-                    <div class="popup-info-row">
-                        <div class="popup-info-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                                <path d="M2 8h20"/>
-                            </svg>
-                        </div>
-                        <div class="popup-info-text">
-                            <div class="popup-info-label">Kota / Kabupaten</div>
-                            <div class="popup-info-value">${escapeHtml(branch.city)}</div>
-                        </div>
-                    </div>
-                    <div class="popup-info-row">
-                        <div class="popup-info-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/>
-                            </svg>
-                        </div>
-                        <div class="popup-info-text">
-                            <div class="popup-info-label">Telepon</div>
-                            <div class="popup-info-value">${escapeHtml(branch.phone)}</div>
-                        </div>
-                    </div>
+                <span class="popup-compact-title" title="${escapeHtml(branch.name)}">${escapeHtml(branch.name)}</span>
+                <div class="popup-compact-actions-group">
                     ${branch.mapsUrl ? `
-                    <a href="${escapeHtml(branch.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="popup-directions-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="${escapeHtml(branch.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="popup-action-btn directions" title="Petunjuk Arah">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <polygon points="3 11 22 2 13 21 11 13 3 11"/>
                         </svg>
-                        Petunjuk Arah
                     </a>
                     ` : ''}
+                    <button class="popup-action-btn expand popup-expand-btn" data-branch-name="${branchId}" title="Lihat Detail">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="15 3 21 3 21 9"/>
+                            <polyline points="9 21 3 21 3 15"/>
+                            <line x1="21" y1="3" x2="14" y2="10"/>
+                            <line x1="3" y1="21" x2="10" y2="14"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;
@@ -200,6 +174,110 @@
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    // ===== Details Drawer / Sidebar Functions =====
+    function openDetailsDrawer(branch) {
+        const drawer = document.getElementById('details-drawer');
+        const drawerContent = document.getElementById('drawer-content');
+        if (!drawer || !drawerContent) return;
+
+        const badgeClass = branch.syariah ? 'syariah' : 'konvensional';
+        const badgeText = branch.syariah ? 'Unit Syariah' : 'Konvensional';
+
+        drawerContent.innerHTML = `
+            <div class="drawer-header">
+                <div class="drawer-badge ${badgeClass}">
+                    <span class="drawer-badge-dot"></span>
+                    ${badgeText}
+                </div>
+                <h2 class="drawer-title">${escapeHtml(branch.name)}</h2>
+            </div>
+            <div class="drawer-body">
+                <div class="drawer-info-card">
+                    <div class="drawer-info-icon ${branch.syariah ? 'green' : ''}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <div class="drawer-info-details">
+                        <div class="drawer-info-label">Alamat Lengkap</div>
+                        <div class="drawer-info-value">${escapeHtml(branch.address)}</div>
+                    </div>
+                </div>
+                <div class="drawer-info-card">
+                    <div class="drawer-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M2 8h20"/>
+                        </svg>
+                    </div>
+                    <div class="drawer-info-details">
+                        <div class="drawer-info-label">Kota / Kabupaten</div>
+                        <div class="drawer-info-value">${escapeHtml(branch.city)}</div>
+                    </div>
+                </div>
+                <div class="drawer-info-card">
+                    <div class="drawer-info-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/>
+                        </svg>
+                    </div>
+                    <div class="drawer-info-details">
+                        <div class="drawer-info-label">Telepon</div>
+                        <div class="drawer-info-value">${escapeHtml(branch.phone || '-')}</div>
+                    </div>
+                </div>
+            </div>
+            ${branch.mapsUrl ? `
+            <div class="drawer-actions">
+                <a href="${escapeHtml(branch.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="drawer-directions-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                    </svg>
+                    Petunjuk Arah Google Maps
+                </a>
+            </div>
+            ` : ''}
+        `;
+
+        drawer.classList.add('active');
+    }
+
+    function closeDetailsDrawer() {
+        const drawer = document.getElementById('details-drawer');
+        if (drawer) {
+            drawer.classList.remove('active');
+        }
+        removeActiveCircle();
+    }
+
+    function initDrawer() {
+        const closeBtn = document.getElementById('drawer-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeDetailsDrawer);
+        }
+
+        // Close drawer on map background click
+        map.on('click', function (e) {
+            // Close details and circle only when clicking the empty map space
+            closeDetailsDrawer();
+        });
+
+        // Global event delegation for compact popup expand button click
+        document.addEventListener('click', function (e) {
+            const expandBtn = e.target.closest('.popup-expand-btn');
+            if (expandBtn) {
+                const branchName = expandBtn.dataset.branchName;
+                if (typeof BRANCHES !== 'undefined') {
+                    const branch = BRANCHES.find(b => b.name === branchName);
+                    if (branch) {
+                        openDetailsDrawer(branch);
+                    }
+                }
+            }
+        });
     }
 
     // ===== Load Branch Data =====
@@ -218,11 +296,12 @@
             });
 
             marker.bindPopup(createPopupContent(branch), {
-                maxWidth: 320,
-                minWidth: 280,
-                closeButton: true,
+                maxWidth: 380,
+                minWidth: 320,
+                closeButton: false, // Hide default leaflet close button for cleaner compact look
                 autoPan: true,
                 autoPanPadding: [40, 40],
+                className: 'compact-leaflet-popup'
             });
 
             marker._branchData = branch;
@@ -407,11 +486,98 @@
         });
     }
 
+    // ===== Landing Transition =====
+    function initLandingTransition() {
+        const exploreBtn = document.getElementById('explore-btn');
+        const heroLanding = document.getElementById('hero-landing');
+        const loadingScreen = document.getElementById('loading-screen');
+        const appMain = document.getElementById('app-main');
+        const progressFill = document.getElementById('loading-bar-fill');
+        const statusText = document.getElementById('loading-status');
+
+        if (!exploreBtn || !heroLanding || !loadingScreen || !appMain) return;
+
+        exploreBtn.addEventListener('click', () => {
+            // 1. Fade out landing page
+            heroLanding.classList.add('fade-out');
+
+            setTimeout(() => {
+                heroLanding.style.display = 'none';
+                
+                // 2. Show loading screen
+                loadingScreen.style.display = 'flex';
+                
+                // Start loading simulation
+                simulateLoadingProgress((progress) => {
+                    progressFill.style.width = progress + '%';
+                    
+                    // Dynamic helpful tips
+                    if (progress < 25) {
+                        statusText.textContent = 'Unit Syariah ditandai dengan pin berwarna hijau, sedangkan Konvensional berwarna biru! 🟢🔵';
+                    } else if (progress < 50) {
+                        statusText.textContent = 'Gunakan fitur Pencarian di bagian atas untuk menemukan cabang berdasarkan kota atau alamat! 🔍';
+                    } else if (progress < 75) {
+                        statusText.textContent = 'Aktifkan radius 60km dengan mengklik salah satu cabang untuk melihat jangkauan wilayah! 🎯';
+                    } else {
+                        statusText.textContent = 'Klik tombol Expand pada popup cabang untuk memunculkan detail kontak lengkap di panel samping! 📋';
+                    }
+                }, () => {
+                    // Loading complete!
+                    // 3. Fade out loading screen
+                    loadingScreen.classList.add('fade-out');
+                    
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        
+                        // 4. Reveal Map Dashboard
+                        appMain.style.display = 'block';
+                        appMain.classList.add('fade-in');
+                        
+                        // Recalculate Leaflet size immediately
+                        map.invalidateSize();
+                        
+                        // Smooth premium entrance animation
+                        map.setView([-2.5, 118], 4);
+                        setTimeout(() => {
+                            map.flyTo([-2.5, 118], 5, {
+                                duration: 1.8,
+                                easeLinearity: 0.2
+                            });
+                        }, 100);
+                        
+                    }, 500); // Wait for loading screen fade out
+                });
+            }, 800); // Wait for landing page fade out
+        });
+    }
+
+    function simulateLoadingProgress(onProgress, onComplete) {
+        let progress = 0;
+        const duration = 1800; // 1.8 seconds transition
+        const intervalTime = 20;
+        const steps = duration / intervalTime;
+        const increment = 100 / steps;
+
+        const timer = setInterval(() => {
+            progress += increment;
+            if (progress >= 100) {
+                progress = 100;
+                onProgress(progress);
+                clearInterval(timer);
+                setTimeout(onComplete, 400); // Small professional pause at 100%
+            } else {
+                onProgress(progress);
+            }
+        }, intervalTime);
+    }
+
     // ===== Initialize =====
     function init() {
         loadBranches();
         initSearch();
         initFilters();
+        initDrawer();
+        initLandingTransition();
     }
 
     // Wait for DOM
