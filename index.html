@@ -99,7 +99,7 @@
                         </div>
                     </div>
                     <div class="stat-divider header-stats-divider"></div>
-                    <button id="show-table-btn" class="header-action-btn" title="Lihat Semua Cabang">
+                    <button id="show-table-btn" class="header-action-btn" title="Lihat Data Lengkap">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="8" y1="6" x2="21" y2="6" />
@@ -109,7 +109,7 @@
                             <line x1="3" y1="12" x2="3.01" y2="12" />
                             <line x1="3" y1="18" x2="3.01" y2="18" />
                         </svg>
-                        <span>Lihat Daftar Cabang</span>
+                        <span>Data Lengkap</span>
                     </button>
                 </div>
             </div>
@@ -238,13 +238,13 @@
                 <table class="branches-data-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">No</th>
-                            <th style="width: 200px;">Nama Cabang</th>
-                            <th style="width: 120px;">Jenis</th>
-                            <th style="width: 150px;">Kota / Kabupaten</th>
-                            <th>Alamat Lengkap</th>
-                            <th style="width: 150px;">No. Telepon</th>
-                            <th style="width: 120px; text-align: center;">Aksi</th>
+                            <th class="col-no" style="width: 50px;">No</th>
+                            <th class="col-name" style="width: 200px;">Nama Cabang</th>
+                            <th class="col-type" style="width: 120px;">Jenis</th>
+                            <th class="col-city" style="width: 150px;">Kota / Kabupaten</th>
+                            <th class="col-address">Alamat Lengkap</th>
+                            <th class="col-phone" style="width: 150px;">No. Telepon</th>
+                            <th class="col-action" style="width: 120px; text-align: center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="branches-table-body">
@@ -307,36 +307,50 @@
             }, [delay]);
 
             const lines = text.split('\n');
+            let globalCharIndex = 0;
 
             return (
                 <h1
-                    className="text-center text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-5 text-[#0a0f1d] leading-tight"
+                    className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-5 text-[#0a0f1d] leading-tight"
                     style={{ letterSpacing: '-0.04em' }}
                 >
                     {lines.map((line, lineIndex) => {
-                        const chars = Array.from(line);
-                        const lineLength = chars.length;
+                        const words = line.split(' ');
 
                         return (
                             <div key={lineIndex} className="block">
-                                {chars.map((char, charIndex) => {
-                                    const isSpace = char === ' ' || char === '\u00A0';
-                                    const displayChar = isSpace ? '\u00A0' : char;
-
-                                    // Delay calculation: (lineIndex * lineLength * charDelay) + (charIndex * charDelay)
-                                    const individualDelay = (lineIndex * lineLength * charDelay) + (charIndex * charDelay);
-
-                                    const spanStyle = {
-                                        display: 'inline-block',
-                                        transition: 'opacity 500ms ease-out, transform 500ms ease-out',
-                                        transitionDelay: `${individualDelay}ms`,
-                                        opacity: animate ? 1 : 0,
-                                        transform: animate ? 'translateX(0)' : 'translateX(-18px)'
-                                    };
-
+                                {words.map((word, wordIndex) => {
+                                    const chars = Array.from(word);
+                                    
                                     return (
-                                        <span key={charIndex} style={spanStyle}>
-                                            {displayChar}
+                                        <span key={wordIndex} style={{ display: 'inline-block', whiteSpace: 'nowrap' }} className="mx-1">
+                                            {chars.map((char, charIndex) => {
+                                                const individualDelay = (globalCharIndex++) * charDelay;
+
+                                                const spanStyle = {
+                                                    display: 'inline-block',
+                                                    transition: 'opacity 500ms ease-out, transform 500ms ease-out',
+                                                    transitionDelay: `${individualDelay}ms`,
+                                                    opacity: animate ? 1 : 0,
+                                                    transform: animate ? 'translateX(0)' : 'translateX(-18px)'
+                                                };
+
+                                                return (
+                                                    <span key={charIndex} style={spanStyle}>
+                                                        {char}
+                                                    </span>
+                                                );
+                                            })}
+                                            {wordIndex < words.length - 1 && (
+                                                <span style={{ 
+                                                    display: 'inline-block',
+                                                    transition: 'opacity 500ms ease-out',
+                                                    transitionDelay: `${(globalCharIndex++) * charDelay}ms`,
+                                                    opacity: animate ? 1 : 0
+                                                }}>
+                                                    {'\u00A0'}
+                                                </span>
+                                            )}
                                         </span>
                                     );
                                 })}
@@ -364,7 +378,7 @@
             };
 
             return (
-                <div className="w-full h-full relative overflow-hidden flex flex-col justify-between pt-12 bg-white">
+                <div className="w-full min-h-full relative overflow-y-auto flex flex-col justify-between pt-6 pb-6 bg-white">
                     {/* Top Navbar */}
                     <header className="relative z-10 px-6 md:px-12 lg:px-16">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -415,7 +429,7 @@
                                     onClick={handleShowTable}
                                     className="border border-[#93c5fd] text-[#2563eb] px-9 py-3.5 rounded-full font-medium bg-white hover:bg-[#eff6ff] transition-all duration-200 scale-100 hover:scale-[1.02] active:scale-95"
                                 >
-                                    Lihat Daftar
+                                    Data Lengkap
                                 </button>
                             </div>
                         </FadeIn>

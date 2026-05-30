@@ -747,17 +747,17 @@
 
             return `
                 <tr>
-                    <td style="font-weight: 600; color: var(--color-text-tertiary);">${index + 1}</td>
-                    <td style="font-weight: 700; color: var(--color-text-primary);">${escapeHtml(branch.name)}</td>
-                    <td>
+                    <td class="col-no" style="font-weight: 600; color: var(--color-text-tertiary);">${index + 1}</td>
+                    <td class="col-name" style="font-weight: 700; color: var(--color-text-primary);">${escapeHtml(branch.name)}</td>
+                    <td class="col-type">
                         <span class="table-badge ${badgeClass}">${badgeText}</span>
                     </td>
-                    <td style="font-weight: 500;">${escapeHtml(branch.city)}</td>
-                    <td style="color: var(--color-text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(branch.address)}">
+                    <td class="col-city" style="font-weight: 500;">${escapeHtml(branch.city)}</td>
+                    <td class="col-address" style="color: var(--color-text-secondary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(branch.address)}">
                         ${escapeHtml(branch.address)}
                     </td>
-                    <td style="font-weight: 500; font-family: monospace;">${escapeHtml(branch.phone || '-')}</td>
-                    <td>
+                    <td class="col-phone" style="font-weight: 500; font-family: monospace;">${escapeHtml(branch.phone || '-')}</td>
+                    <td class="col-action">
                         <div class="table-action-btn-group">
                             <button class="table-action-btn map-locate" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}" title="Tampilkan di Peta">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
