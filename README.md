@@ -70,4 +70,8 @@ Lalu buka peramban Anda di `http://localhost:3000`.
 ---
 
 ## 💻 Pengembang
-Dibangun dengan 💖. Dibuat oleh **itsokkay** untuk BFI Finance.
+Dibuat oleh **itsokkay** untuk BFI Finance.
+Source peta dari bfi.co.id
+#SelaluAdaJalan untuk hidup #JauhLebihTenang
+
+(lokasi mungkin bisa berbeda dan berubah sesuai dengan kebijakan perusahaan)
