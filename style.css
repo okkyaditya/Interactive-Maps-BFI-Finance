@@ -23,6 +23,12 @@
     --color-blue-light: #60a5fa;
     --color-blue-bg: #eff6ff;
     --color-blue-border: #93c5fd;
+
+    /* POS Orange */
+    --color-orange: #ea580c;
+    --color-orange-light: #f97316;
+    --color-orange-bg: #fff7ed;
+    --color-orange-border: #fed7aa;
     
     /* Neutrals */
     --color-bg: #f8fafc;
@@ -1161,7 +1167,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #000000;
+    background: radial-gradient(circle at center, #ffffff 0%, #f3f4f6 100%);
     z-index: 2000;
     overflow: hidden;
     transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1341,14 +1347,14 @@ body {
     }
 }
 
-/* --- Minimalist Loading Transition Screen (No Card, Dark Mode) --- */
+/* --- Minimalist Loading Transition Screen (No Card, Light Mode) --- */
 .loading-screen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #0b1329 0%, #030712 100%);
+    background: radial-gradient(circle at center, #ffffff 0%, #f3f4f6 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1375,7 +1381,7 @@ body {
 .loader-tip-title {
     font-size: 12px;
     font-weight: 700;
-    color: #3b82f6; /* Accent blue tip */
+    color: #2563eb; /* Accent blue tip */
     letter-spacing: 1px;
     text-transform: uppercase;
     margin-bottom: 8px;
@@ -1384,7 +1390,7 @@ body {
 .loader-tip-text {
     font-size: 14.5px;
     font-weight: 500;
-    color: #e2e8f0;
+    color: #334155; /* Dark slate text for light mode */
     line-height: 1.6;
     margin-bottom: 24px;
     max-width: 440px;
@@ -1394,7 +1400,7 @@ body {
 .loading-bar-container {
     width: 240px; /* Slim loading bar width */
     height: 4px; /* Thin minimalist height matching mockup */
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.08); /* Dark track for light mode */
     border-radius: 2px;
     overflow: hidden;
 }
@@ -1402,7 +1408,7 @@ body {
 .loading-bar-fill {
     height: 100%;
     width: 0%;
-    background: #3b82f6; /* Accent blue progress fill */
+    background: #2563eb; /* Accent blue progress fill */
     border-radius: 2px;
     transition: width 0.1s linear;
 }
@@ -1817,6 +1823,54 @@ body {
   mask-composite: xor; /* fallback */
   mask-composite: exclude;
   pointer-events: none;
+}
+
+/* --- POS Orange Theme Support --- */
+.stat-dot.orange {
+    background: var(--color-orange);
+    box-shadow: 0 0 0 3px var(--color-orange-bg);
+}
+
+.search-result-dot.orange {
+    background: var(--color-orange);
+}
+
+.filter-dot.orange {
+    background: var(--color-orange);
+}
+
+.legend-marker.orange {
+    background: var(--color-orange);
+}
+
+.drawer-info-icon.orange {
+    color: var(--color-orange);
+}
+
+.drawer-badge.pos {
+    background: var(--color-orange-bg);
+    color: var(--color-orange);
+    border: 1px solid var(--color-orange-border);
+}
+
+.drawer-badge.pos .drawer-badge-dot {
+    background: var(--color-orange);
+}
+
+.branches-data-table .table-badge.pos {
+    background: var(--color-orange-bg);
+    color: var(--color-orange);
+    border: 1px solid var(--color-orange-border);
+}
+
+.popup-compact-row.pos::before {
+    background-color: var(--color-orange);
+}
+
+.popup-compact-row.pos .popup-home-icon-container {
+    background-color: var(--color-orange-bg);
+    color: var(--color-orange);
+    border-color: var(--color-orange-border);
 }
 
 

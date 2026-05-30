@@ -31,8 +31,25 @@
         <circle cx="15" cy="13" r="2.5" fill="#2563eb"/>
     </svg>`;
 
-    function createMarkerIcon(isSyariah) {
-        const svg = isSyariah ? PIN_GREEN_SVG : PIN_BLUE_SVG;
+    const PIN_ORANGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">
+        <defs>
+            <filter id="shadow-o" x="-20%" y="-10%" width="140%" height="130%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+            </filter>
+        </defs>
+        <path d="M15 38 C15 38 3 22 3 13 C3 6.4 8.4 1 15 1 C21.6 1 27 6.4 27 13 C27 22 15 38 15 38Z" 
+              fill="#ea580c" stroke="#c2410c" stroke-width="1.5" filter="url(#shadow-o)"/>
+        <circle cx="15" cy="13" r="5.5" fill="white" opacity="0.95"/>
+        <circle cx="15" cy="13" r="2.5" fill="#ea580c"/>
+    </svg>`;
+
+    function createMarkerIcon(branch) {
+        let svg = PIN_BLUE_SVG;
+        if (branch.isPos) {
+            svg = PIN_ORANGE_SVG;
+        } else if (branch.syariah) {
+            svg = PIN_GREEN_SVG;
+        }
         const iconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 
         return L.icon({
@@ -93,6 +110,7 @@
 
     // ===== State =====
     let allMarkers = [];
+    let markerMap = new Map(); // O(1) marker lookup by name
     let currentFilter = 'all';
     let activeCircle = null;
 
@@ -136,7 +154,12 @@
 
     // ===== Create Popup HTML (Compact 1-Row Layout) =====
     function createPopupContent(branch) {
-        const statusClass = branch.syariah ? 'syariah' : 'konvensional';
+        let statusClass = 'konvensional';
+        if (branch.isPos) {
+            statusClass = 'pos';
+        } else if (branch.syariah) {
+            statusClass = 'syariah';
+        }
         const branchId = escapeHtml(branch.name);
 
         return `
@@ -182,8 +205,15 @@
         const drawerContent = document.getElementById('drawer-content');
         if (!drawer || !drawerContent) return;
 
-        const badgeClass = branch.syariah ? 'syariah' : 'konvensional';
-        const badgeText = branch.syariah ? 'Unit Syariah' : 'Konvensional';
+        let badgeClass = 'konvensional';
+        let badgeText = 'Konvensional';
+        if (branch.isPos) {
+            badgeClass = 'pos';
+            badgeText = 'POS BFI Finance';
+        } else if (branch.syariah) {
+            badgeClass = 'syariah';
+            badgeText = 'Unit Syariah';
+        }
 
         drawerContent.innerHTML = `
             <div class="drawer-header">
@@ -195,7 +225,7 @@
             </div>
             <div class="drawer-body">
                 <div class="drawer-info-card">
-                    <div class="drawer-info-icon ${branch.syariah ? 'green' : ''}">
+                    <div class="drawer-info-icon ${branch.isPos ? 'orange' : (branch.syariah ? 'green' : '')}">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                             <circle cx="12" cy="10" r="3"/>
@@ -297,7 +327,7 @@
             }
 
             const marker = L.marker([branch.lat, branch.lng], {
-                icon: createMarkerIcon(branch.syariah),
+                icon: createMarkerIcon(branch),
             });
 
             marker.bindPopup(createPopupContent(branch), {
@@ -311,6 +341,7 @@
 
             marker._branchData = branch;
             allMarkers.push(marker);
+            markerMap.set(branch.name, marker);
         });
 
         // Add all markers to cluster group
@@ -327,8 +358,9 @@
 
         const filteredMarkers = allMarkers.filter((marker) => {
             const branch = marker._branchData;
-            if (filter === 'syariah') return branch.syariah === true;
-            if (filter === 'konvensional') return branch.syariah === false;
+            if (filter === 'syariah') return branch.syariah === true && !branch.isPos;
+            if (filter === 'konvensional') return branch.syariah === false && !branch.isPos;
+            if (filter === 'pos') return branch.isPos === true;
             return true; // 'all'
         });
 
@@ -343,12 +375,14 @@
     // ===== Stats =====
     function updateStats() {
         const total = BRANCHES.length;
-        const syariahCount = BRANCHES.filter((b) => b.syariah).length;
-        const konvensionalCount = total - syariahCount;
+        const syariahCount = BRANCHES.filter((b) => b.syariah && !b.isPos).length;
+        const konvensionalCount = BRANCHES.filter((b) => !b.syariah && !b.isPos).length;
+        const posCount = BRANCHES.filter((b) => b.isPos).length;
 
         animateNumber(document.querySelector('#stat-total .stat-number'), total);
         animateNumber(document.querySelector('#stat-syariah .stat-number'), syariahCount);
         animateNumber(document.querySelector('#stat-konvensional .stat-number'), konvensionalCount);
+        animateNumber(document.querySelector('#stat-pos .stat-number'), posCount);
     }
 
     function animateNumber(el, target) {
@@ -434,7 +468,7 @@
         resultsDiv.innerHTML = matches
             .map(
                 (branch) => `
-            <div class="search-result-item" data-lat="${branch.lat}" data-lng="${branch.lng}">
+            <div class="search-result-item" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}">
                 <div class="search-result-dot ${branch.syariah ? 'green' : 'blue'}"></div>
                 <div class="search-result-info">
                     <div class="search-result-name">${escapeHtml(branch.name)}</div>
@@ -452,6 +486,7 @@
             item.addEventListener('click', () => {
                 const lat = parseFloat(item.dataset.lat);
                 const lng = parseFloat(item.dataset.lng);
+                const branchName = item.dataset.name;
 
                 // Fly to location
                 map.flyTo([lat, lng], 16, {
@@ -461,10 +496,7 @@
 
                 // Find and open the marker popup
                 setTimeout(() => {
-                    const targetMarker = allMarkers.find((m) => {
-                        const d = m._branchData;
-                        return d.lat === lat && d.lng === lng;
-                    });
+                    const targetMarker = markerMap.get(branchName);
 
                     if (targetMarker) {
                         // Ensure the marker is visible (handle cluster spiderfy)
@@ -627,8 +659,9 @@
 
             const filtered = BRANCHES.filter((branch) => {
                 // Category filter
-                if (filterType === 'syariah' && !branch.syariah) return false;
-                if (filterType === 'konvensional' && branch.syariah) return false;
+                if (filterType === 'syariah' && (!branch.syariah || branch.isPos)) return false;
+                if (filterType === 'konvensional' && (branch.syariah || branch.isPos)) return false;
+                if (filterType === 'pos' && !branch.isPos) return false;
 
                 // Search query filter
                 if (query) {
@@ -647,6 +680,41 @@
 
         searchInput.addEventListener('input', handleFilters);
         filterSelect.addEventListener('change', handleFilters);
+
+        // Event Delegation for table actions (locate on map)
+        const tableBody = document.getElementById('branches-table-body');
+        if (tableBody) {
+            tableBody.addEventListener('click', (e) => {
+                const locateBtn = e.target.closest('.map-locate');
+                if (locateBtn) {
+                    const lat = parseFloat(locateBtn.dataset.lat);
+                    const lng = parseFloat(locateBtn.dataset.lng);
+                    const branchName = locateBtn.dataset.name;
+
+                    // Close Modal
+                    modal.style.display = 'none';
+
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    // Smooth premium flight to coordinates
+                    map.flyTo([lat, lng], 15, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+
+                    // Find and trigger popup open and active circle radius lock
+                    setTimeout(() => {
+                        const targetMarker = markerMap.get(branchName);
+                        if (targetMarker) {
+                            updateActiveCircle(targetMarker._branchData);
+                            clusterGroup.zoomToShowLayer(targetMarker, () => {
+                                targetMarker.openPopup();
+                            });
+                        }
+                    }, 1600);
+                }
+            });
+        }
     }
 
     function renderBranchesTable(data) {
@@ -667,8 +735,15 @@
         }
 
         tableBody.innerHTML = data.map((branch, index) => {
-            const badgeClass = branch.syariah ? 'syariah' : 'konvensional';
-            const badgeText = branch.syariah ? 'Unit Syariah' : 'Konvensional';
+            let badgeClass = 'konvensional';
+            let badgeText = 'Konvensional';
+            if (branch.isPos) {
+                badgeClass = 'pos';
+                badgeText = 'POS BFI';
+            } else if (branch.syariah) {
+                badgeClass = 'syariah';
+                badgeText = 'Unit Syariah';
+            }
 
             return `
                 <tr>
@@ -702,47 +777,6 @@
                 </tr>
             `;
         }).join('');
-
-        // Bind map-locate click event handlers
-        tableBody.querySelectorAll('.map-locate').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const lat = parseFloat(btn.dataset.lat);
-                const lng = parseFloat(btn.dataset.lng);
-                const branchName = btn.dataset.name;
-
-                // Close Modal
-                document.getElementById('table-modal').style.display = 'none';
-
-                if (isNaN(lat) || isNaN(lng)) return;
-
-                // Smooth premium flight to coordinates
-                map.flyTo([lat, lng], 15, {
-                    duration: 1.5,
-                    easeLinearity: 0.25
-                });
-
-                // Find and trigger popup open and active circle radius lock
-                setTimeout(() => {
-                    if (typeof BRANCHES !== 'undefined') {
-                        const branch = BRANCHES.find(b => b.name === branchName);
-                        if (branch) {
-                            updateActiveCircle(branch);
-                        }
-                    }
-
-                    const targetMarker = allMarkers.find(m => {
-                        const d = m._branchData;
-                        return d.lat === lat && d.lng === lng;
-                    });
-
-                    if (targetMarker) {
-                        clusterGroup.zoomToShowLayer(targetMarker, () => {
-                            targetMarker.openPopup();
-                        });
-                    }
-                }, 1600);
-            });
-        });
     }
 
     // ===== Initialize =====
