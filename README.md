@@ -2,7 +2,8 @@
 
 **Blocation** (BFI Location) adalah sebuah aplikasi pemetaan interaktif berbasis web yang memvisualisasikan seluruh jaringan kantor BFI Finance di seluruh penjuru Indonesia. Mulai dari Kantor Cabang Konvensional, Unit Syariah, hingga POS (Point of Sales).
 
-Didesain dengan antarmuka premium, ringan, dan modern, aplikasi ini memudahkan pengguna untuk menelusuri ratusan lokasi cabang BFI Finance secara interaktif dalam satu layar.
+Didesain dengan antarmuka minimalis, ringan, dan modern, aplikasi ini memudahkan pengguna untuk menelusuri ratusan lokasi cabang BFI Finance secara interaktif dalam satu layar.
+Link Demo : https://mapsbfi.netlify.app/
 
 ---
 
