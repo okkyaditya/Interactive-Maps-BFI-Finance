@@ -78,9 +78,9 @@
         attributionControl: true,
     });
 
-    // Clean Transport Map Tile Layer (CyclOSM)
-    L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://www.cyclosm.org/">CyclOSM</a>',
+    // Standard OpenStreetMap Tile Layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
     }).addTo(map);
 
@@ -110,9 +110,67 @@
 
     // ===== State =====
     let allMarkers = [];
-    let markerMap = new Map(); // O(1) marker lookup by name
+    let markerMap = new Map(); // O(1) marker lookup by display name
+    let branchMap = new Map(); // O(1) branch lookup by display name
+    let normalizedBranches = [];
+    let mappableBranches = [];
     let currentFilter = 'all';
     let activeCircle = null;
+
+    function normalizeBranchName(name) {
+        return (name || '').replace(/^cabang\s+/i, '').trim();
+    }
+
+    function hasValidCoordinates(branch) {
+        return Number.isFinite(branch.lat) && Number.isFinite(branch.lng);
+    }
+
+    function getBranchType(branch) {
+        if (branch.isPos) return 'pos';
+        if (branch.syariah) return 'syariah';
+        return 'konvensional';
+    }
+
+    function getBranchDotClass(branch) {
+        const type = getBranchType(branch);
+        if (type === 'pos') return 'orange';
+        if (type === 'syariah') return 'green';
+        return 'blue';
+    }
+
+    function prepareBranchData(branches) {
+        const seenKeys = new Set();
+
+        return branches.reduce((acc, branch) => {
+            const normalizedBranch = {
+                ...branch,
+                name: normalizeBranchName(branch.name),
+                originalName: branch.name,
+                lat: typeof branch.lat === 'number' ? branch.lat : Number(branch.lat),
+                lng: typeof branch.lng === 'number' ? branch.lng : Number(branch.lng),
+            };
+
+            normalizedBranch.type = getBranchType(normalizedBranch);
+            normalizedBranch.hasValidCoordinates = hasValidCoordinates(normalizedBranch);
+
+            const dedupeKey = [
+                normalizedBranch.originalName,
+                normalizedBranch.address,
+                normalizedBranch.phone,
+                normalizedBranch.lat,
+                normalizedBranch.lng,
+                normalizedBranch.type,
+            ].join('|');
+
+            if (seenKeys.has(dedupeKey)) {
+                return acc;
+            }
+
+            seenKeys.add(dedupeKey);
+            acc.push(normalizedBranch);
+            return acc;
+        }, []);
+    }
 
     // ===== Active Radius Circle Management (60km) =====
     function updateActiveCircle(branch) {
@@ -125,7 +183,7 @@
         if (!branch) return;
 
         // Draw new circle (60km = 60000 meters)
-        const circleColor = branch.syariah ? '#059669' : '#2563eb'; // Emerald Green / Royal Blue
+        const circleColor = branch.isPos ? '#ea580c' : branch.syariah ? '#059669' : '#2563eb';
         activeCircle = L.circle([branch.lat, branch.lng], {
             radius: 60000,
             color: circleColor,
@@ -300,11 +358,9 @@
             const expandBtn = e.target.closest('.popup-expand-btn');
             if (expandBtn) {
                 const branchName = expandBtn.dataset.branchName;
-                if (typeof BRANCHES !== 'undefined') {
-                    const branch = BRANCHES.find(b => b.name === branchName);
-                    if (branch) {
-                        openDetailsDrawer(branch);
-                    }
+                const branch = branchMap.get(branchName);
+                if (branch) {
+                    openDetailsDrawer(branch);
                 }
             }
         });
@@ -317,14 +373,14 @@
             return;
         }
 
-        // Create markers
-        BRANCHES.forEach((branch) => {
-            if (!branch.lat || !branch.lng) return;
+        normalizedBranches = prepareBranchData(BRANCHES);
+        mappableBranches = normalizedBranches.filter((branch) => branch.hasValidCoordinates);
+        branchMap = new Map(normalizedBranches.map((branch) => [branch.name, branch]));
+        markerMap = new Map();
+        allMarkers = [];
 
-            // Strip "Cabang " prefix dynamically from name if present
-            if (branch.name) {
-                branch.name = branch.name.replace(/^cabang\s+/i, "");
-            }
+        // Create markers
+        mappableBranches.forEach((branch) => {
 
             const marker = L.marker([branch.lat, branch.lng], {
                 icon: createMarkerIcon(branch),
@@ -358,9 +414,9 @@
 
         const filteredMarkers = allMarkers.filter((marker) => {
             const branch = marker._branchData;
-            if (filter === 'syariah') return branch.syariah === true && !branch.isPos;
-            if (filter === 'konvensional') return branch.syariah === false && !branch.isPos;
-            if (filter === 'pos') return branch.isPos === true;
+            if (filter === 'syariah') return branch.type === 'syariah';
+            if (filter === 'konvensional') return branch.type === 'konvensional';
+            if (filter === 'pos') return branch.type === 'pos';
             return true; // 'all'
         });
 
@@ -374,10 +430,10 @@
 
     // ===== Stats =====
     function updateStats() {
-        const total = BRANCHES.length;
-        const syariahCount = BRANCHES.filter((b) => b.syariah && !b.isPos).length;
-        const konvensionalCount = BRANCHES.filter((b) => !b.syariah && !b.isPos).length;
-        const posCount = BRANCHES.filter((b) => b.isPos).length;
+        const total = normalizedBranches.length;
+        const syariahCount = normalizedBranches.filter((b) => b.type === 'syariah').length;
+        const konvensionalCount = normalizedBranches.filter((b) => b.type === 'konvensional').length;
+        const posCount = normalizedBranches.filter((b) => b.type === 'pos').length;
 
         animateNumber(document.querySelector('#stat-total .stat-number'), total);
         animateNumber(document.querySelector('#stat-syariah .stat-number'), syariahCount);
@@ -451,7 +507,7 @@
         const resultsDiv = document.getElementById('search-results');
         const lowerQuery = query.toLowerCase();
 
-        const matches = BRANCHES.filter((branch) => {
+        const matches = normalizedBranches.filter((branch) => {
             return (
                 branch.name.toLowerCase().includes(lowerQuery) ||
                 branch.city.toLowerCase().includes(lowerQuery) ||
@@ -468,8 +524,8 @@
         resultsDiv.innerHTML = matches
             .map(
                 (branch) => `
-            <div class="search-result-item" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}">
-                <div class="search-result-dot ${branch.syariah ? 'green' : 'blue'}"></div>
+            <div class="search-result-item" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}" data-has-valid-coords="${branch.hasValidCoordinates}">
+                <div class="search-result-dot ${getBranchDotClass(branch)}"></div>
                 <div class="search-result-info">
                     <div class="search-result-name">${escapeHtml(branch.name)}</div>
                     <div class="search-result-city">${escapeHtml(branch.city)}</div>
@@ -487,6 +543,12 @@
                 const lat = parseFloat(item.dataset.lat);
                 const lng = parseFloat(item.dataset.lng);
                 const branchName = item.dataset.name;
+                const hasValidCoords = item.dataset.hasValidCoords === 'true';
+
+                if (!hasValidCoords || Number.isNaN(lat) || Number.isNaN(lng)) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
 
                 // Fly to location
                 map.flyTo([lat, lng], 16, {
@@ -632,7 +694,7 @@
         // Open Modal
         showBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
-            renderBranchesTable(BRANCHES);
+            renderBranchesTable(normalizedBranches);
             // Reset filters
             searchInput.value = '';
             filterSelect.value = 'all';
@@ -655,13 +717,9 @@
             const query = searchInput.value.trim().toLowerCase();
             const filterType = filterSelect.value;
 
-            if (typeof BRANCHES === 'undefined') return;
-
-            const filtered = BRANCHES.filter((branch) => {
+            const filtered = normalizedBranches.filter((branch) => {
                 // Category filter
-                if (filterType === 'syariah' && (!branch.syariah || branch.isPos)) return false;
-                if (filterType === 'konvensional' && (branch.syariah || branch.isPos)) return false;
-                if (filterType === 'pos' && !branch.isPos) return false;
+                if (filterType !== 'all' && branch.type !== filterType) return false;
 
                 // Search query filter
                 if (query) {
@@ -735,13 +793,11 @@
         }
 
         tableBody.innerHTML = data.map((branch, index) => {
-            let badgeClass = 'konvensional';
+            let badgeClass = branch.type || 'konvensional';
             let badgeText = 'Konvensional';
-            if (branch.isPos) {
-                badgeClass = 'pos';
+            if (badgeClass === 'pos') {
                 badgeText = 'POS BFI';
-            } else if (branch.syariah) {
-                badgeClass = 'syariah';
+            } else if (badgeClass === 'syariah') {
                 badgeText = 'Unit Syariah';
             }
 
