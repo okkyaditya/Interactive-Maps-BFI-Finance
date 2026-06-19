@@ -36,6 +36,10 @@
 
     <!-- App CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a56db'/%3E%3Cpath d='M16 7c-4.418 0-8 3.582-8 8 0 5.25 8 11 8 11s8-5.75 8-11c0-4.418-3.582-8-8-8z' fill='white'/%3E%3Ccircle cx='16' cy='15' r='3' fill='%231a56db'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a56db'/%3E%3Cpath d='M16 7c-4.418 0-8 3.582-8 8 0 5.25 8 11 8 11s8-5.75 8-11c0-4.418-3.582-8-8-8z' fill='white'/%3E%3Ccircle cx='16' cy='15' r='3' fill='%231a56db'/%3E%3C/svg%3E">
 </head>
 
 <body>
@@ -99,6 +103,14 @@
                         </div>
                     </div>
                     <div class="stat-divider header-stats-divider"></div>
+                    <button id="nearest-btn" class="header-action-btn" title="Cabang Terdekat" style="background: var(--color-green); box-shadow: 0 2px 6px rgba(5,150,105,0.25);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" stroke-opacity="0.3"/>
+                        </svg>
+                        <span>Lokasi Saya</span>
+                    </button>
                     <button id="show-table-btn" class="header-action-btn" title="Lihat Data Lengkap">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -182,6 +194,24 @@
             </div>
         </div>
 
+        <!-- Nearest Branches Panel -->
+        <div id="nearest-panel" class="nearest-panel" style="display:none;">
+            <div class="nearest-panel-header">
+                <div class="nearest-panel-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                    </svg>
+                    5 Cabang Terdekat
+                </div>
+                <button id="nearest-close" class="nearest-close-btn" aria-label="Tutup">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="nearest-list" class="nearest-list"></div>
+        </div>
+
         <!-- Details Drawer -->
         <div id="details-drawer" class="details-drawer">
             <button class="drawer-close" id="drawer-close" aria-label="Tutup Detail">
@@ -201,17 +231,36 @@
     <div id="table-modal" class="table-modal" style="display: none;">
         <div class="table-modal-box">
             <div class="table-modal-header">
-                <div class="table-modal-title-section">
-                    <h2 class="table-modal-title">Daftar Semua Cabang BFI Finance</h2>
-                    <p class="table-modal-subtitle">Total terdata: <span id="table-total-count">0</span> cabang</p>
+                <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                    <div class="logo-icon" style="flex-shrink:0;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </div>
+                    <div class="table-modal-title-section">
+                        <h2 class="table-modal-title">Daftar Semua Cabang BFI Finance</h2>
+                        <p class="table-modal-subtitle">Total terdata: <span id="table-total-count">0</span> cabang</p>
+                    </div>
                 </div>
-                <button id="close-table-btn" class="table-modal-close" aria-label="Tutup Tabel">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <button id="export-csv-btn" class="header-action-btn header-action-btn-secondary" title="Export ke CSV">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>Export CSV</span>
+                    </button>
+                    <button id="close-table-btn" class="table-modal-close" aria-label="Tutup Tabel">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="table-modal-filters">

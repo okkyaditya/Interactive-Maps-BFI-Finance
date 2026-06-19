@@ -109,6 +109,7 @@
     map.addLayer(clusterGroup);
 
     // ===== State =====
+    // ===== State =====
     let allMarkers = [];
     let markerMap = new Map(); // O(1) marker lookup by display name
     let branchMap = new Map(); // O(1) branch lookup by display name
@@ -116,6 +117,8 @@
     let mappableBranches = [];
     let currentFilter = 'all';
     let activeCircle = null;
+    let userLocation = null;       // { lat, lng } from Geolocation API
+    let userMarker = null;         // Leaflet marker for user's position
 
     function normalizeBranchName(name) {
         return (name || '').replace(/^cabang\s+/i, '').trim();
@@ -136,6 +139,105 @@
         if (type === 'pos') return 'orange';
         if (type === 'syariah') return 'green';
         return 'blue';
+    }
+
+    // ===== Haversine Distance (km) =====
+    function haversineDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatDistance(km) {
+        if (km < 1) return (km * 1000).toFixed(0) + ' m';
+        return km.toFixed(1) + ' km';
+    }
+
+    // ===== Nearest Branches Panel =====
+    function showNearestBranches(lat, lng) {
+        const panel = document.getElementById('nearest-panel');
+        const list = document.getElementById('nearest-list');
+        if (!panel || !list) return;
+
+        const withDist = mappableBranches
+            .map(b => ({ ...b, distance: haversineDistance(lat, lng, b.lat, b.lng) }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 5);
+
+        list.innerHTML = withDist.map(b => `
+            <div class="nearest-item" data-name="${escapeHtml(b.name)}">
+                <div class="nearest-dot ${getBranchDotClass(b)}"></div>
+                <div class="nearest-info">
+                    <div class="nearest-name">${escapeHtml(b.name)}</div>
+                    <div class="nearest-city">${escapeHtml(b.city)}</div>
+                </div>
+                <div class="nearest-distance">${formatDistance(b.distance)}</div>
+            </div>
+        `).join('');
+
+        panel.style.display = 'block';
+
+        list.querySelectorAll('.nearest-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const branch = branchMap.get(item.dataset.name);
+                if (!branch) return;
+                map.flyTo([branch.lat, branch.lng], 16, { duration: 1.2 });
+                setTimeout(() => {
+                    const marker = markerMap.get(branch.name);
+                    if (marker) clusterGroup.zoomToShowLayer(marker, () => marker.openPopup());
+                }, 1300);
+                panel.style.display = 'none';
+            });
+        });
+    }
+
+    function initNearestBtn() {
+        const btn = document.getElementById('nearest-btn');
+        const panel = document.getElementById('nearest-panel');
+        const closeBtn = document.getElementById('nearest-close');
+
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert('Browser Anda tidak mendukung Geolocation.');
+                return;
+            }
+            btn.classList.add('loading');
+            btn.title = 'Mencari lokasi...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    btn.classList.remove('loading');
+                    btn.title = 'Cabang Terdekat';
+                    userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+                    // Place/update user marker
+                    if (userMarker) map.removeLayer(userMarker);
+                    const userIcon = L.divIcon({
+                        html: `<div class="user-location-dot"></div>`,
+                        className: '',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10],
+                    });
+                    userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+
+                    map.flyTo([userLocation.lat, userLocation.lng], 12, { duration: 1.5 });
+                    showNearestBranches(userLocation.lat, userLocation.lng);
+                },
+                () => {
+                    btn.classList.remove('loading');
+                    btn.title = 'Cabang Terdekat';
+                    alert('Tidak dapat mengakses lokasi Anda. Pastikan izin lokasi sudah diberikan.');
+                },
+                { timeout: 10000 }
+            );
+        });
+
+        if (closeBtn) closeBtn.addEventListener('click', () => { if (panel) panel.style.display = 'none'; });
     }
 
     function prepareBranchData(branches) {
@@ -257,6 +359,45 @@
         return div.innerHTML;
     }
 
+    // ===== Share Link =====
+    function getBranchShareUrl(branchName) {
+        const base = window.location.origin + window.location.pathname;
+        return base + '?branch=' + encodeURIComponent(branchName);
+    }
+
+    function copyShareLink(branchName, btnEl) {
+        const url = getBranchShareUrl(branchName);
+        navigator.clipboard.writeText(url).then(() => {
+            const orig = btnEl.innerHTML;
+            btnEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tersalin!`;
+            btnEl.classList.add('copied');
+            setTimeout(() => { btnEl.innerHTML = orig; btnEl.classList.remove('copied'); }, 2000);
+        }).catch(() => {
+            prompt('Salin link ini:', url);
+        });
+    }
+
+    function initShareLinkFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const branchParam = params.get('branch');
+        if (!branchParam) return;
+        // Wait for data to be ready then fly to branch
+        const tryOpen = () => {
+            const branch = branchMap.get(decodeURIComponent(branchParam));
+            if (!branch) return;
+            map.flyTo([branch.lat, branch.lng], 16, { duration: 1.5 });
+            setTimeout(() => {
+                const marker = markerMap.get(branch.name);
+                if (marker) clusterGroup.zoomToShowLayer(marker, () => {
+                    marker.openPopup();
+                    openDetailsDrawer(branch);
+                });
+            }, 1600);
+        };
+        // Defer until after loadBranches
+        setTimeout(tryOpen, 500);
+    }
+
     // ===== Details Drawer / Sidebar Functions =====
     function openDetailsDrawer(branch) {
         const drawer = document.getElementById('details-drawer');
@@ -273,6 +414,23 @@
             badgeText = 'Unit Syariah';
         }
 
+        // Distance card (only if user location is known)
+        const distanceCard = userLocation ? (() => {
+            const km = haversineDistance(userLocation.lat, userLocation.lng, branch.lat, branch.lng);
+            return `
+                <div class="drawer-info-card">
+                    <div class="drawer-info-icon" style="color:#2563eb;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="drawer-info-details">
+                        <div class="drawer-info-label">Jarak dari Lokasi Anda</div>
+                        <div class="drawer-info-value" style="font-weight:700;color:#2563eb;">${formatDistance(km)}</div>
+                    </div>
+                </div>`;
+        })() : '';
+
         drawerContent.innerHTML = `
             <div class="drawer-header">
                 <div class="drawer-badge ${badgeClass}">
@@ -282,6 +440,7 @@
                 <h2 class="drawer-title">${escapeHtml(branch.name)}</h2>
             </div>
             <div class="drawer-body">
+                ${distanceCard}
                 <div class="drawer-info-card">
                     <div class="drawer-info-icon ${branch.isPos ? 'orange' : (branch.syariah ? 'green' : '')}">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -318,17 +477,31 @@
                     </div>
                 </div>
             </div>
-            ${branch.mapsUrl ? `
             <div class="drawer-actions">
+                ${branch.mapsUrl ? `
                 <a href="${escapeHtml(branch.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="drawer-directions-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="3 11 22 2 13 21 11 13 3 11"/>
                     </svg>
                     Petunjuk Arah Google Maps
                 </a>
+                ` : ''}
+                <button class="drawer-share-btn" id="drawer-share-btn" data-branch="${escapeHtml(branch.name)}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    Salin Link Cabang
+                </button>
             </div>
-            ` : ''}
         `;
+
+        // Share button handler
+        const shareBtn = drawerContent.querySelector('#drawer-share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => copyShareLink(branch.name, shareBtn));
+        }
 
         drawer.classList.add('active');
     }
@@ -523,15 +696,21 @@
 
         resultsDiv.innerHTML = matches
             .map(
-                (branch) => `
+                (branch) => {
+                    const distLabel = userLocation
+                        ? `<div class="search-result-dist">${formatDistance(haversineDistance(userLocation.lat, userLocation.lng, branch.lat, branch.lng))}</div>`
+                        : '';
+                    return `
             <div class="search-result-item" data-lat="${branch.lat}" data-lng="${branch.lng}" data-name="${escapeHtml(branch.name)}" data-has-valid-coords="${branch.hasValidCoordinates}">
                 <div class="search-result-dot ${getBranchDotClass(branch)}"></div>
                 <div class="search-result-info">
                     <div class="search-result-name">${escapeHtml(branch.name)}</div>
                     <div class="search-result-city">${escapeHtml(branch.city)}</div>
                 </div>
+                ${distLabel}
             </div>
-        `
+        `;
+                }
             )
             .join('');
 
@@ -681,6 +860,33 @@
         }, intervalTime);
     }
 
+    // ===== Export CSV =====
+    function exportToCSV(data) {
+        const headers = ['No', 'Nama Cabang', 'Jenis', 'Kota/Kabupaten', 'Alamat', 'Telepon'];
+        const rows = data.map((b, i) => {
+            const type = b.type === 'syariah' ? 'Unit Syariah' : b.type === 'pos' ? 'POS BFI Finance' : 'Konvensional';
+            return [
+                i + 1,
+                b.name,
+                type,
+                b.city,
+                b.address,
+                b.phone || '-'
+            ].map(v => '"' + String(v).replace(/"/g, '""') + '"');
+        });
+
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'BFI-Finance-Cabang.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     // ===== Interactive Branches Table Modal =====
     function initTableModal() {
         const modal = document.getElementById('table-modal');
@@ -738,6 +944,27 @@
 
         searchInput.addEventListener('input', handleFilters);
         filterSelect.addEventListener('change', handleFilters);
+
+        // Export CSV button
+        const exportBtn = document.getElementById('export-csv-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                const filterType = filterSelect.value;
+                const filtered = normalizedBranches.filter((branch) => {
+                    if (filterType !== 'all' && branch.type !== filterType) return false;
+                    if (query) {
+                        return (
+                            branch.name.toLowerCase().includes(query) ||
+                            branch.city.toLowerCase().includes(query) ||
+                            branch.address.toLowerCase().includes(query)
+                        );
+                    }
+                    return true;
+                });
+                exportToCSV(filtered);
+            });
+        }
 
         // Event Delegation for table actions (locate on map)
         const tableBody = document.getElementById('branches-table-body');
@@ -843,6 +1070,8 @@
         initDrawer();
         initLandingTransition();
         initTableModal();
+        initNearestBtn();
+        initShareLinkFromUrl();
     }
 
     // Wait for DOM
